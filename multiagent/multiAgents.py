@@ -15,6 +15,7 @@
 from util import manhattanDistance
 from game import Directions
 import random, util
+import math
 
 from game import Agent
 
@@ -44,6 +45,7 @@ class ReflexAgent(Agent):
         # Choose one of the best actions
         scores = [self.evaluationFunction(gameState, action) for action in legalMoves]
         bestScore = max(scores)
+        # print(scores, bestScore)
         bestIndices = [index for index in range(len(scores)) if scores[index] == bestScore]
         chosenIndex = random.choice(bestIndices) # Pick randomly among the best
 
@@ -72,11 +74,30 @@ class ReflexAgent(Agent):
         newFood = successorGameState.getFood()
         newGhostStates = successorGameState.getGhostStates()
         newScaredTimes = [ghostState.scaredTimer for ghostState in newGhostStates]
+        score = successorGameState.getScore()
 
+        foodScore = 0
+        if successorGameState.getNumFood() == currentGameState.getNumFood():
+            foodList = [(x,y) for x in range(0, newFood.width) for y in range(0, newFood.height) if newFood[x][y] == True]
+            nearestFood = min([util.manhattanDistance(newPos, (x,y)) for x,y in foodList])
+            foodScore += (1/(nearestFood)) 
+        else:
+            foodScore += 1
+            
+        ghostScore = 0
+        ghostPositions = successorGameState.getGhostPositions()
+        if ghostPositions:
+            nearestGhost = min([util.manhattanDistance(newPos, gp) for gp in ghostPositions])
+            if nearestGhost == 0:
+                return -(math.inf)
+            ghostScore = nearestGhost
+
+        scaredScore = sum(newScaredTimes)    
+
+        score += foodScore + ghostScore + scaredScore
         
+        return score
 
-        "*** YOUR CODE HERE ***"
-        return successorGameState.getScore()
 
 def scoreEvaluationFunction(currentGameState):
     """
