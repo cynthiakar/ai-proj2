@@ -129,6 +129,9 @@ class MultiAgentSearchAgent(Agent):
         self.evaluationFunction = util.lookup(evalFn, globals())
         self.depth = int(depth)
 
+        # Stop the game when needed 
+        self.stopGame = Directions.STOP
+
 class MinimaxAgent(MultiAgentSearchAgent):
     """
     Your minimax agent (question 2)
@@ -195,6 +198,97 @@ class AlphaBetaAgent(MultiAgentSearchAgent):
         Returns the minimax action using self.depth and self.evaluationFunction
         """
         "*** YOUR CODE HERE ***"
+        # intializing alpha & beta as inifinity 
+        value, path = self.alpha_pacM_value(gameState, float ('-inf'),float ('inf'), 0, self.depth)
+        # if value & path == 0 then return the path 
+        return path 
+    
+    # maximum value of the PacMan 
+    def alpha_pacM_value (self, pos_state, alpha, beta, numAgt, depth):
+        # whether its win or lose, return the value of the game
+        if pos_state.isWin() or pos_state.isLose():
+            return self.evaluationFunction(pos_state), 'None'
+        
+        maxEvaluation = float ('-inf')
+        # returns a list of agent's path from one location to the next 
+        path = pos_state.getLegalActions(numAgt)
+        # score of the best path
+        best_path_score = path[0]
+
+        # for loop that finds the max value of the path 
+        # and pruning through the path for the max value
+        for pathWay in path:
+            # variable for the previous maxEvaluation 
+            prevMaxEval = maxEvaluation
+            # obtain the successor game state after the agent takes a path 
+            successorGameState = pos_state.generateSuccessor(numAgt, pathWay)
+            # if the depth is 0 whether agent lost or won, then take the max
+            # of the maxEvaluation and self.evaluationFunction 
+            if(depth == 0 or successorGameState.isWin() or successorGameState.isLose()):
+                #takes the max of the maxEvaluation and self.evaluationFunction 
+                maxEvaluation = max(maxEvaluation,self.evaluationFunction(successorGameState))
+            else: 
+                #take the max of the maxEvaluation and minEvaluation of the ghost (beta)
+                maxEvaluation = max(maxEvaluation, self.beta_ghost_value(successorGameState,alpha,beta,numAgt+1,depth))
+            
+            # checks for pruning through the tree
+            # if maxEvaluation is greater than beta, the return the maxEvaluation and path 
+            if maxEvaluation > beta: 
+                return maxEvaluation, pathWay
+            #set alpha to be the max of the alpha and maxEvaluation 
+            alpha = max(alpha,maxEvaluation)
+            # if the maxEvaluation does not equal the past maxEval 
+            # then store the path to the bestpathScore 
+            if maxEvaluation != prevMaxEval:
+                best_path_score = pathWay
+
+        # loop does not have maxValue/pruning then return the current path and maxEvaluation 
+        return (maxEvaluation, best_path_score)
+
+    # minimum value of the ghost 
+    def beta_ghost_value(self, pos_state, alpha, beta, numAgt, depth):
+        # whether its win or lose, return the value of the game
+        if pos_state.isWin() or pos_state.isLose():
+            return self.evaluationFunction(pos_state), 'None'
+        
+        ghMinEval = float ('inf')
+        # returns a list of agent's path from one location to the next 
+        gh_path = pos_state.getLegalActions(numAgt)
+        # decreasing depth boolean 
+        decreasingDepth = False 
+        # for loop that finds the min value of the path 
+        for path in gh_path:
+            #obtain the successor game state after the agent takes a path 
+            successorGameState = pos_state.generateSuccessor(numAgt, path)
+            # if the depth is 0 whether agent lost or won, then take the min
+            # of the ghMinEval and self.evaluationFunction 
+            if(depth == 0 or successorGameState.isWin() or successorGameState.isLose()):
+                #takes the min of the ghMinEval and self.evaluationFunction 
+                ghMinEval = min(ghMinEval,self.evaluationFunction(successorGameState))
+            elif numAgt == (pos_state.getNumAgents() - 1):
+                # if decreasing Depth is false than 
+                # it avoids deacreaing the depth of the same level more than once 
+                if decreasingDepth == False: 
+                    depth -= 1
+                    decreasingDepth = True 
+                # if the last level of the tree is reached 
+                if depth == 0:
+                    # then return the min of the ghMinEval and self.evaluationFunction 
+                    ghMinEval = min(ghMinEval,self.evaluationFunction(successorGameState))
+                else: 
+                    # if not the last level then print out the min of the ghMinEvla and the alpha_pacM_value at 0
+                    ghMinEval = min(ghMinEval, self.alpha_pacM_value(successorGameState,alpha, beta, 0, depth)[0])
+            else:
+                # take the min of the ghMinEval and the beta_ghost_value
+                ghMinEval = min(ghMinEval, self.beta_ghost_value(successorGameState,alpha,beta,numAgt+1, depth))
+            
+            # checks for pruning through the tree
+            if ghMinEval < alpha:
+                #return the ghMinEval 
+                return ghMinEval
+            #set beta to the min of the ghMinEval and beta
+            beta = min(beta,ghMinEval)
+        return ghMinEval
         util.raiseNotDefined()
 
 class ExpectimaxAgent(MultiAgentSearchAgent):
@@ -210,6 +304,39 @@ class ExpectimaxAgent(MultiAgentSearchAgent):
         legal moves.
         """
         "*** YOUR CODE HERE ***"
+        # getting the number of agents 
+        numOfAgt = gameState.getNumAgents()
+
+        # size of the tree (depth of the tree)
+        depthOfTree = self.depth*numOfAgt
+
+        # enter the function that will go through the tree, 
+        # get the average of the bottom nodes, then 
+        # get the min value of the calucated average 
+        # finally get the max of the min values 
+        self.getAverageMaxMin(gameState, depthOfTree, numOfAgt)
+        
+        # stop the game once the final max is found 
+        return self.stopGame
+
+        # this method would get the average of the nodes from the subtrees
+        # take the min value of the average 
+        # take the max value of the min values 
+        def getAverageMaxMin(self, gameState, depth, numAgt):
+            # list for the maxValues of the nodes
+            maxValues = []
+
+            # list for the average values of the node 
+            avgValues = []
+
+            # whether its win or lose, return the value of the game
+            if gameState.isWin() or gameState.isLose():
+                return self.evaluationFunction(gameState)
+            
+            # if the depth of the tree is greater than 0 
+            if depthOfTree > 0:
+                #
+
         util.raiseNotDefined()
 
 def betterEvaluationFunction(currentGameState):
