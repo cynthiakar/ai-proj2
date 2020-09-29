@@ -305,74 +305,43 @@ class ExpectimaxAgent(MultiAgentSearchAgent):
         All ghosts should be modeled as choosing uniformly at random from their
         legal moves.
         """
-        "*** YOUR CODE HERE ***"
 
-        # getting the number of agents 
-        numOfAgt = gameState.getNumAgents()
+        return self.expectimaxValue(gameState, self.depth, 0)[1]
 
-        # size of the tree (depth of the tree)
-        depthOfTree = self.depth * numOfAgt
+    def expectimaxValue(self, gameState, depth, agentIndex):
+        # if the state is a terminal state: return the state's utility
+        if depth == 0 or gameState.isWin() or gameState.isLose():
+            return self.evaluationFunction(gameState), None
 
-        # enter the function that will go through the tree, 
-        # get the average of the bottom nodes, then 
-        # get the min value of the calucated average 
-        # finally get the max of the min values 
-        self.getAverageMaxMin(gameState, depthOfTree, numOfAgt)
+        legalActions = gameState.getLegalActions(agentIndex)
+        nextAgent = agentIndex + 1
+        nextDepth = depth
+        if nextAgent >= gameState.getNumAgents():
+            nextAgent = 0
+            nextDepth = depth - 1
 
-        # stop the game once the final max is found 
-        return self.stopGame
-        util.raiseNotDefined()
+        bestAction = None
+        # if the next agent is MAX: initialize bestValue to negative infinity
+        if agentIndex == 0:
+            bestValue = -math.inf
+        # if the next agent is EXP: initialize bestValue to 0
+        else:
+            bestValue = 0
 
-        # this method would get the average of the nodes from the subtrees
-        # take the min value of the average 
-        # take the max value of the min values 
-    def getAverageMaxMin(self, gameState, depthOfTree, numOfAgt):
-        # list for the maxValues of the nodes
-        maxValues = list()
+        for a in legalActions:
+            result = self.expectimaxValue(gameState.generateSuccessor(agentIndex, a), nextDepth, nextAgent)
+            # if the next agent is MAX: return max-value
+            if agentIndex == 0:
+                if result[0] > bestValue:
+                    bestValue = result[0]
+                    bestAction = a
+            # if the next agent is EXP: return exp-value
+            else:
+                # get average of values
+                bestValue += result[0]/len(legalActions)
+                bestAction = a
 
-        # list for the average values of the node 
-        avgValues = list()
-
-
-        # whether its win or lose, return the value of the game
-        if gameState.isWin() or gameState.isLose():
-            return self.evaluationFunction(gameState)
-            
-        # if the depth of the tree is greater than 0 
-        if depthOfTree > 0:
-            # if there is no more depth in the tree then there is no more agents
-            if depthOfTree%numOfAgt == 0:
-                agtNum = 0 
-            else: 
-                agtNum = numOfAgt - (depthOfTree%numOfAgt)
-            
-            paths = gameState.getLegalActions(agtNum)
-
-            for path in paths: 
-                successorGameState = gameState.generateSuccessor(agtNum, path)
-
-                if agtNum == 0: 
-                    maxValues.append((self.getAverageMaxMin(successorGameState,depthOfTree-1,numOfAgt), path))
-                    maxOfmax = max(maxValues)
-                    self.maxNum = maxOfmax[0] #= -999999
-                    self.stopGame = maxOfmax[1]
-
-                else: 
-                    avgValues.append((self.getAverageMaxMin(successorGameState,depthOfTree-1,numOfAgt), path))
-                    Average = 0.0
-                    for avg in avgValues:
-                        Average += avgValues[avgValues.index(avg)][0]
-                    avg = avg/(len(avgValues))
-                    self.vAg = Average 
-            if agtNum == 0:
-                return self.maxNum #-999999
-            else: 
-                return self.vAg #999999
-        else: 
-            return self.evaluationFunction(gameState)
-                 
-
-        #util.raiseNotDefined()
+        return bestValue, bestAction 
 
 def betterEvaluationFunction(currentGameState):
     """
