@@ -352,7 +352,7 @@ def betterEvaluationFunction(currentGameState):
     """
     if currentGameState.isWin():
         return math.inf
-    if currentGameState.isLost():
+    if currentGameState.isLose():
         return -math.inf
 
     pos = currentGameState.getPacmanPosition()
@@ -362,27 +362,33 @@ def betterEvaluationFunction(currentGameState):
     score = currentGameState.getScore()
     pellets = currentGameState.getCapsules()
 
-    foodWeight, pelletWeight, ghostWeight = 1, 1, 1
+    foodWeight, pelletWeight, ghostWeight = 1, 20, 2
 
-    # manhattan distance to closest food
-    foodList = [(x,y) for x in range(0, food.width) for y in range(0, food.height) if food[x][y] == True]
-    nearestFood = min([util.manhattanDistance(pos, (x,y)) for x,y in foodList])
-    foodScore = (1/(nearestFood)) 
-    foodScore += (1/food)
+    foodScore, pelletsScore, actGhScore, scGhScore = 0, 0, 0, 0
+    if food:
+        # manhattan distance to closest food
+        foodList = [(x,y) for x in range(0, food.width) for y in range(0, food.height) if food[x][y] == True]
+        nearestFood = min([util.manhattanDistance(pos, (x,y)) for x,y in foodList])
+        foodScore = 1.5*(1/(nearestFood)) 
+        foodScore += 4*(1/len(foodList))
 
     # pellets score
-    pelletsScore = (1/pellets) * pelletsWeight
+    if pellets:
+        pelletsScore = (1/len(pellets)) * pelletWeight
 
     activeGhosts = [ghost for ghost in ghostStates if not ghost.scaredTimer]
     scaredGhosts = [ghost for ghost in ghostStates if ghost.scaredTimer]
 
-    nearestActGh = min([util.manhattanDistance(pos, ghost.getPosition()) for ghost in activeGhosts])
-    actGhScore = nearestActGh * ghostWeight
+    if activeGhosts:
+        nearestActGh = min([util.manhattanDistance(pos, ghost.getPosition()) for ghost in activeGhosts])
+        actGhScore = nearestActGh * ghostWeight
 
-    nearestScGh = min([util.manhattanDistance(pos, ghost.getPosition()) for ghost in scaredGhosts])
-    actGhScore = (1/nearestScGh)
+    if scaredGhosts:
+        nearestScGh = min([util.manhattanDistance(pos, ghost.getPosition()) for ghost in scaredGhosts])
+        scGhScore = (1/nearestScGh) * ghostWeight
 
-    return foodScore + pelletsScore + nearestActGh + nearestScGh
+    score += foodScore + pelletsScore + actGhScore + scGhScore
+    return score
 
     util.raiseNotDefined()
 
