@@ -131,6 +131,8 @@ class MultiAgentSearchAgent(Agent):
 
         # Stop the game when needed 
         self.stopGame = Directions.STOP
+        self.maxNum = -99999
+        self.vAg = 99999
 
 class MinimaxAgent(MultiAgentSearchAgent):
     """
@@ -304,40 +306,73 @@ class ExpectimaxAgent(MultiAgentSearchAgent):
         legal moves.
         """
         "*** YOUR CODE HERE ***"
+
         # getting the number of agents 
         numOfAgt = gameState.getNumAgents()
 
         # size of the tree (depth of the tree)
-        depthOfTree = self.depth*numOfAgt
+        depthOfTree = self.depth * numOfAgt
 
         # enter the function that will go through the tree, 
         # get the average of the bottom nodes, then 
         # get the min value of the calucated average 
         # finally get the max of the min values 
         self.getAverageMaxMin(gameState, depthOfTree, numOfAgt)
-        
+
         # stop the game once the final max is found 
         return self.stopGame
+        util.raiseNotDefined()
 
         # this method would get the average of the nodes from the subtrees
         # take the min value of the average 
         # take the max value of the min values 
-        def getAverageMaxMin(self, gameState, depth, numAgt):
-            # list for the maxValues of the nodes
-            maxValues = []
+    def getAverageMaxMin(self, gameState, depthOfTree, numOfAgt):
+        # list for the maxValues of the nodes
+        maxValues = list()
 
-            # list for the average values of the node 
-            avgValues = []
+        # list for the average values of the node 
+        avgValues = list()
 
-            # whether its win or lose, return the value of the game
-            if gameState.isWin() or gameState.isLose():
-                return self.evaluationFunction(gameState)
+
+        # whether its win or lose, return the value of the game
+        if gameState.isWin() or gameState.isLose():
+            return self.evaluationFunction(gameState)
             
-            # if the depth of the tree is greater than 0 
-            if depthOfTree > 0:
-                #
+        # if the depth of the tree is greater than 0 
+        if depthOfTree > 0:
+            # if there is no more depth in the tree then there is no more agents
+            if depthOfTree%numOfAgt == 0:
+                agtNum = 0 
+            else: 
+                agtNum = numOfAgt - (depthOfTree%numOfAgt)
+            
+            paths = gameState.getLegalActions(agtNum)
 
-        util.raiseNotDefined()
+            for path in paths: 
+                successorGameState = gameState.generateSuccessor(agtNum, path)
+
+                if agtNum == 0: 
+                    maxValues.append((self.getAverageMaxMin(successorGameState,depthOfTree-1,numOfAgt), path))
+                    maxOfmax = max(maxValues)
+                    self.maxNum = maxOfmax[0] #= -999999
+                    self.stopGame = maxOfmax[1]
+
+                else: 
+                    avgValues.append((self.getAverageMaxMin(successorGameState,depthOfTree-1,numOfAgt), path))
+                    Average = 0.0
+                    for avg in avgValues:
+                        Average += avgValues[avgValues.index(avg)][0]
+                    avg = avg/(len(avgValues))
+                    self.vAg = Average 
+            if agtNum == 0:
+                return self.maxNum #-999999
+            else: 
+                return self.vAg #999999
+        else: 
+            return self.evaluationFunction(gameState)
+                 
+
+        #util.raiseNotDefined()
 
 def betterEvaluationFunction(currentGameState):
     """
