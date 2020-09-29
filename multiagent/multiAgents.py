@@ -334,7 +334,7 @@ class ExpectimaxAgent(MultiAgentSearchAgent):
                 return self.evaluationFunction(gameState)
             
             # if the depth of the tree is greater than 0 
-            if depthOfTree > 0:
+            # if depthOfTree > 0:
                 #
 
         util.raiseNotDefined()
@@ -346,7 +346,40 @@ def betterEvaluationFunction(currentGameState):
 
     DESCRIPTION: <write something here so we know what you did>
     """
-    "*** YOUR CODE HERE ***"
+    if currentGameState.isWin():
+        return math.inf
+    if currentGameState.isLost():
+        return -math.inf
+
+    pos = currentGameState.getPacmanPosition()
+    food = currentGameState.getFood()
+    ghostStates = currentGameState.getGhostStates()
+    scaredTimes = [ghostState.scaredTimer for ghostState in ghostStates]
+    score = currentGameState.getScore()
+    pellets = currentGameState.getCapsules()
+
+    foodWeight, pelletWeight, ghostWeight = 1, 1, 1
+
+    # manhattan distance to closest food
+    foodList = [(x,y) for x in range(0, food.width) for y in range(0, food.height) if food[x][y] == True]
+    nearestFood = min([util.manhattanDistance(pos, (x,y)) for x,y in foodList])
+    foodScore = (1/(nearestFood)) 
+    foodScore += (1/food)
+
+    # pellets score
+    pelletsScore = (1/pellets) * pelletsWeight
+
+    activeGhosts = [ghost for ghost in ghostStates if not ghost.scaredTimer]
+    scaredGhosts = [ghost for ghost in ghostStates if ghost.scaredTimer]
+
+    nearestActGh = min([util.manhattanDistance(pos, ghost.getPosition()) for ghost in activeGhosts])
+    actGhScore = nearestActGh * ghostWeight
+
+    nearestScGh = min([util.manhattanDistance(pos, ghost.getPosition()) for ghost in scaredGhosts])
+    actGhScore = (1/nearestScGh)
+
+    return foodScore + pelletsScore + nearestActGh + nearestScGh
+
     util.raiseNotDefined()
 
 # Abbreviation
