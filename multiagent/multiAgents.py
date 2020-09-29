@@ -362,15 +362,15 @@ def betterEvaluationFunction(currentGameState):
     score = currentGameState.getScore()
     pellets = currentGameState.getCapsules()
 
-    foodWeight, pelletWeight, ghostWeight = 1, 20, 2
+    foodWeight1, foodWeight2, pelletWeight, ghostWeight = 5, 4, 20, 3
 
     foodScore, pelletsScore, actGhScore, scGhScore = 0, 0, 0, 0
     if food:
         # manhattan distance to closest food
         foodList = [(x,y) for x in range(0, food.width) for y in range(0, food.height) if food[x][y] == True]
         nearestFood = min([util.manhattanDistance(pos, (x,y)) for x,y in foodList])
-        foodScore = 1.5*(1/(nearestFood)) 
-        foodScore += 4*(1/len(foodList))
+        foodScore = foodWeight1*(1/(nearestFood)) 
+        foodScore += foodWeight2*(1/len(foodList))
 
     # pellets score
     if pellets:
