@@ -12,6 +12,9 @@
 # Pieter Abbeel (pabbeel@cs.berkeley.edu).
 
 
+# Project 2 by Arvin Lin and Cynthia Kar
+# CIS 467
+
 from util import manhattanDistance
 from game import Directions
 import random, util
